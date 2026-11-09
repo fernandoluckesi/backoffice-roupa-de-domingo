@@ -5,6 +5,7 @@ import { useAsync } from "@/hooks/useAsync";
 import { EmptyState, ErrorState, Loading } from "@/components/StateViews";
 import { FulfillmentStatusBadge, OrderStatusBadge, PaymentStatusBadge } from "@/components/StatusBadge";
 import { Pagination } from "@/components/Pagination";
+import { ScrollTabs } from "@/components/ScrollTabs";
 import { dateInputToIso, formatDateTime, formatMoney } from "@/utils/format";
 import { isOrderStage, serviceForMethod, stageCount, STAGES } from "@/utils/status";
 import { labelsUrl } from "@/utils/links";
@@ -94,7 +95,7 @@ export function OrdersPage() {
         </div>
       </header>
 
-      <div className="tabs" role="tablist" aria-label="Etapas">
+      <ScrollTabs label="Etapas" activeKey={stage}>
         {STAGES.map((s) => (
           <button
             key={s.value}
@@ -108,7 +109,7 @@ export function OrdersPage() {
             {summary.data && <span className="tab__count">{stageCount(summary.data, s.value)}</span>}
           </button>
         ))}
-      </div>
+      </ScrollTabs>
 
       <form className="filters" onSubmit={handleSearch} role="search">
         <label className="field field--grow">

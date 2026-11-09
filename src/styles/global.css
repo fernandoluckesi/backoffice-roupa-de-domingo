@@ -643,12 +643,64 @@ textarea.input {
 }
 
 /* ------------------------------------------------------------------ lista de pedidos */
+.scroll-tabs {
+  position: relative;
+  margin-bottom: 14px;
+}
 .tabs {
   display: flex;
   gap: 4px;
   overflow-x: auto;
   border-bottom: 1px solid var(--border);
-  margin-bottom: 14px;
+  /* a rolagem e feita pelas setas, toque ou trackpad: sem barra de rolagem visivel */
+  scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar {
+  display: none;
+}
+.scroll-tabs__arrow {
+  position: absolute;
+  top: 0;
+  bottom: 1px;
+  z-index: 1;
+  width: 44px;
+  display: flex;
+  align-items: center;
+  border: none;
+  color: var(--text);
+  cursor: pointer;
+  padding: 0 4px;
+}
+.scroll-tabs__arrow svg {
+  flex: none;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  width: 28px;
+  height: 28px;
+  padding: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+.scroll-tabs__arrow:hover svg {
+  border-color: var(--graphite-900);
+}
+.scroll-tabs__arrow:focus-visible {
+  outline: none;
+}
+.scroll-tabs__arrow:focus-visible svg {
+  outline: 2px solid var(--graphite-900);
+  outline-offset: 2px;
+}
+/* degrade sobre as abas cortadas: indica que ha mais itens daquele lado */
+.scroll-tabs__arrow--left {
+  left: 0;
+  justify-content: flex-start;
+  background: linear-gradient(to right, var(--bg) 55%, transparent);
+}
+.scroll-tabs__arrow--right {
+  right: 0;
+  justify-content: flex-end;
+  background: linear-gradient(to left, var(--bg) 55%, transparent);
 }
 .tab {
   background: none;
