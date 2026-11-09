@@ -74,7 +74,10 @@ export const PAYMENT_STATUS_TONE: Record<PaymentStatus, Tone> = {
   CANCELLED: "neutral",
 };
 
+// A ordem define as abas da lista de pedidos. "Todos" vem primeiro por ser a
+// visao de entrada; as demais seguem a sequencia da linha de producao.
 export const STAGES: { value: OrderStage; label: string }[] = [
+  { value: "all", label: "Todos" },
   { value: "to_produce", label: "A produzir" },
   { value: "in_production", label: "Em produção" },
   { value: "packed", label: "Embalados" },
@@ -82,7 +85,6 @@ export const STAGES: { value: OrderStage; label: string }[] = [
   { value: "delivered", label: "Entregues" },
   { value: "awaiting_payment", label: "Aguardando pagamento" },
   { value: "issues", label: "Problemas" },
-  { value: "all", label: "Todos" },
 ];
 
 export function isOrderStage(value: string | null): value is OrderStage {
