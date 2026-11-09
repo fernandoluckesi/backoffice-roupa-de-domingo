@@ -1,0 +1,34 @@
+# Imagem de producao do backoffice para o Railway (servico proprio, separado da loja).
+# Selecionado pelo railway.json (build.dockerfilePath).
+
+FROM node:20-slim AS build
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --no-audit --no-fund
+COPY . .
+# O Vite embute as variaveis no bundle: precisam existir no BUILD.
+# O Railway repassa as variaveis do servico como build args quando o ARG e declarado.
+# VITE_API_URL padrao "/api": mesma origem, o nginx abaixo repassa ao backend pela rede privada.
+# VITE_STOREFRONT_URL: origem publica da loja (as fotos dos produtos sao servidas por ela).
+ARG VITE_API_URL=/api
+ARG VITE_STOREFRONT_URL=https://roupadedomingo.com.br
+ENV VITE_API_URL=$VITE_API_URL VITE_STOREFRONT_URL=$VITE_STOREFRONT_URL
+RUN npm run build
+
+FROM nginx:1.27-alpine AS production
+# A imagem oficial roda envsubst em /etc/nginx/templates/*.template no start
+# (so com variaveis definidas no ambiente; $host, $uri etc. ficam intactos).
+ENV PORT=80
+# Backend na rede privada do Railway (<servico>.railway.internal:<PORT do backend>)
+ENV BACKEND_INTERNAL_URL=http://backend-roupa-de-domingo.railway.internal:8080
+ENV NGINX_ENTRYPOINT_LOCAL_RESOLVERS=1
+# A CSP (img-src) libera a origem da loja. Vem do mesmo build arg do bundle, mas pode
+# ser sobrescrita em runtime com a variavel STOREFRONT_ORIGIN (somente origem, sem barra final).
+ARG VITE_STOREFRONT_URL=https://roupadedomingo.com.br
+ENV STOREFRONT_ORIGIN=$VITE_STOREFRONT_URL
+COPY nginx.railway.conf.template /etc/nginx/templates/default.conf.template
+# Vira /etc/nginx/conf.d/security-headers.inc (nao e *.conf, entao so entra via include)
+COPY nginx/security-headers.inc.template /etc/nginx/templates/security-headers.inc.template
+COPY --from=build /app/dist /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]

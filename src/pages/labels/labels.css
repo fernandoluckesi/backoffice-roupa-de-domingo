@@ -1,0 +1,449 @@
+/*
+ * Layout de impressao: etiquetas (10x15 cm termica ou A4 com 4 por folha),
+ * Declaracao de Conteudo e romaneio (A4).
+ * Paginas nomeadas (CSS Paged Media) para cada tipo de folha ter o proprio tamanho.
+ */
+@page {
+  margin: 0;
+}
+@page thermal {
+  size: 100mm 150mm;
+  margin: 0;
+}
+@page a4 {
+  size: A4;
+  margin: 0;
+}
+
+.labels-page {
+  min-height: 100vh;
+  background: #d9d9de;
+  padding-bottom: 40px;
+}
+
+/* ------------------------------------------------------------------ controles (tela) */
+.labels-controls {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 20px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow-sm);
+}
+.labels-controls__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+.labels-controls__title {
+  font-size: 18px;
+  margin-right: auto;
+}
+.labels-controls__hint {
+  margin-top: 8px;
+  color: var(--text-faint);
+  font-size: 12px;
+}
+.labels-controls .alert {
+  margin: 10px 0 0;
+}
+.labels-page > .state {
+  background: var(--surface);
+  max-width: 600px;
+  margin: 0 auto;
+  border-radius: var(--radius-md);
+}
+
+/* ------------------------------------------------------------------ folhas */
+.print-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+.sheet {
+  background: #fff;
+  color: #000;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+  font-family: Arial, Helvetica, sans-serif;
+  break-after: page;
+  page-break-after: always;
+}
+.sheet:last-child {
+  break-after: auto;
+  page-break-after: auto;
+}
+.sheet--thermal {
+  page: thermal;
+  width: 100mm;
+  height: 150mm;
+}
+.sheet--a4 {
+  page: a4;
+  width: 210mm;
+  height: 297mm;
+}
+.sheet--grid {
+  display: grid;
+  grid-template-columns: repeat(2, 100mm);
+  grid-template-rows: repeat(2, 140mm);
+  justify-content: center;
+  align-content: center;
+}
+.sheet__cell {
+  /* linhas de corte */
+  outline: 0.3mm dashed #888;
+  outline-offset: -0.15mm;
+  overflow: hidden;
+}
+.sheet--doc {
+  padding: 12mm 14mm;
+}
+
+/* ------------------------------------------------------------------ etiqueta de endereco */
+.address-label {
+  height: 100%;
+  padding: 4mm;
+  display: flex;
+  flex-direction: column;
+  gap: 2.5mm;
+  font-size: 9pt;
+  line-height: 1.25;
+}
+.address-label p {
+  margin: 0;
+}
+.address-label__top {
+  display: flex;
+  align-items: center;
+  gap: 3mm;
+  padding-bottom: 2mm;
+  border-bottom: 0.4mm solid #000;
+}
+.address-label__service {
+  font-size: 20pt;
+  font-weight: 900;
+  padding: 0.5mm 3mm;
+  border: 0.6mm solid #000;
+  letter-spacing: 0.05em;
+}
+.address-label__service--sedex {
+  background: #000;
+  color: #fff;
+}
+.address-label__meta {
+  display: flex;
+  flex-direction: column;
+  font-size: 8.5pt;
+}
+.address-label__meta strong {
+  font-size: 10pt;
+}
+.address-label__tracking {
+  display: flex;
+  justify-content: center;
+  min-height: 18mm;
+  align-items: center;
+}
+.address-label__tracking .barcode {
+  width: 80mm;
+  max-width: 100%;
+  height: auto;
+  max-height: 22mm;
+}
+.address-label__tracking--empty {
+  font-size: 9pt;
+  border: 0.3mm dashed #000;
+}
+.address-label__recipient {
+  flex: 1;
+  border: 0.5mm solid #000;
+  padding: 2.5mm 3mm;
+  font-size: 11pt;
+  line-height: 1.3;
+  display: flex;
+  flex-direction: column;
+}
+.address-label__caption {
+  display: inline-block;
+  align-self: flex-start;
+  font-size: 8pt;
+  font-weight: 900;
+  background: #000;
+  color: #fff;
+  padding: 0.3mm 2mm;
+  margin-bottom: 1.5mm;
+  letter-spacing: 0.05em;
+}
+.address-label__name {
+  font-size: 13pt;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.address-label__city {
+  font-size: 12pt;
+}
+.address-label__small {
+  font-size: 8.5pt;
+}
+.address-label__cep-barcode {
+  margin-top: auto;
+  padding-top: 2mm;
+}
+.address-label__cep-barcode .barcode {
+  width: 45mm;
+  height: 10mm;
+}
+.address-label__sender {
+  border-top: 0.3mm dashed #000;
+  padding-top: 1.5mm;
+  font-size: 8pt;
+  line-height: 1.25;
+}
+.address-label__sender .address-label__caption {
+  font-size: 7pt;
+  margin-bottom: 1mm;
+}
+
+/* A4: celula de 140 mm de altura (um pouco menor que a termica) */
+.print-area--a4 .address-label {
+  padding: 3.5mm;
+  gap: 2mm;
+}
+
+/* ------------------------------------------------------------------ declaracao de conteudo */
+.declaration {
+  display: flex;
+  flex-direction: column;
+  gap: 4mm;
+  font-size: 9.5pt;
+  height: 100%;
+}
+.declaration__header {
+  text-align: center;
+  border: 0.5mm solid #000;
+  padding: 3mm;
+}
+.declaration__header h1 {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 16pt;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+.declaration__ref {
+  font-size: 8.5pt;
+}
+.declaration__parties {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4mm;
+}
+.declaration__party {
+  border: 0.4mm solid #000;
+}
+.declaration__party-title,
+.declaration__section-title {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 9.5pt;
+  font-weight: 900;
+  background: #e6e6e6;
+  border-bottom: 0.4mm solid #000;
+  padding: 1.2mm 2mm;
+  text-align: center;
+  margin: 0;
+}
+.declaration__party dl {
+  display: grid;
+  grid-template-columns: 22mm 1fr;
+  margin: 0;
+}
+.declaration__party dt,
+.declaration__party dd {
+  margin: 0;
+  padding: 1.3mm 2mm;
+  border-bottom: 0.2mm solid #000;
+  min-height: 6mm;
+}
+.declaration__party dt {
+  font-weight: 700;
+  font-size: 8pt;
+  border-right: 0.2mm solid #000;
+}
+.declaration__party dt:nth-last-of-type(1),
+.declaration__party dd:nth-last-of-type(1) {
+  border-bottom: none;
+}
+.declaration__goods {
+  border: 0.4mm solid #000;
+}
+.declaration__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.declaration__table th,
+.declaration__table td {
+  border: 0.2mm solid #000;
+  padding: 1.3mm 2mm;
+  height: 6.5mm;
+}
+.declaration__table tr > :first-child {
+  border-left: none;
+}
+.declaration__table tr > :last-child {
+  border-right: none;
+}
+.declaration__table th {
+  font-size: 8pt;
+  background: #f2f2f2;
+}
+.declaration__col-n {
+  width: 13mm;
+}
+.declaration__col-q {
+  width: 18mm;
+}
+.declaration__col-v {
+  width: 30mm;
+}
+.declaration__statement,
+.declaration__note {
+  border: 0.4mm solid #000;
+}
+.declaration__statement p,
+.declaration__note p {
+  padding: 2.5mm 3mm;
+  text-align: justify;
+  margin: 0;
+}
+.declaration__note p {
+  font-size: 8.5pt;
+}
+.declaration__sign {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 8mm;
+  padding: 8mm 3mm 3mm;
+}
+.declaration__signature {
+  flex: 0 0 85mm;
+  border-top: 0.3mm solid #000;
+  padding-top: 1mm;
+  text-align: center;
+  font-size: 8.5pt;
+}
+
+/* ------------------------------------------------------------------ romaneio */
+.packing-slip {
+  display: flex;
+  flex-direction: column;
+  gap: 6mm;
+  font-size: 10.5pt;
+}
+.packing-slip__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 8mm;
+  padding-bottom: 4mm;
+  border-bottom: 0.6mm solid #000;
+}
+.packing-slip__header h1 {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 17pt;
+  font-weight: 900;
+}
+.packing-slip__brand {
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 9pt;
+}
+.packing-slip__meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: 9.5pt;
+  text-align: right;
+}
+.packing-slip__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.packing-slip__table th,
+.packing-slip__table td {
+  border-bottom: 0.3mm solid #000;
+  padding: 2.5mm 2mm;
+  text-align: left;
+  vertical-align: top;
+}
+.packing-slip__table th {
+  font-size: 8.5pt;
+  text-transform: uppercase;
+}
+.packing-slip__table td.center,
+.packing-slip__table th.packing-slip__qty-col {
+  text-align: center;
+}
+.packing-slip__table td.right {
+  text-align: right;
+}
+.packing-slip__check-col {
+  width: 12mm;
+}
+.packing-slip__qty-col {
+  width: 16mm;
+}
+.packing-slip__qty {
+  font-size: 14pt;
+  font-weight: 900;
+}
+.packing-slip__custom {
+  margin-top: 1mm;
+  padding: 1mm 2mm;
+  border: 0.3mm solid #000;
+  display: inline-block;
+}
+.packing-slip__table .checkbox-box {
+  width: 5mm;
+  height: 5mm;
+}
+.packing-slip__thanks {
+  margin-top: 4mm;
+  font-size: 11pt;
+  font-style: italic;
+  text-align: center;
+}
+
+/* ------------------------------------------------------------------ impressao */
+@media print {
+  .labels-page {
+    background: #fff;
+    padding: 0;
+    min-height: 0;
+  }
+  .print-area {
+    display: block;
+  }
+  .sheet {
+    box-shadow: none;
+    margin: 0;
+  }
+  .sheet--grid {
+    display: grid;
+  }
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
+/* Documentos longos (muitos itens) continuam na folha seguinte em vez de serem cortados */
+.sheet--doc {
+  height: auto;
+  min-height: 296mm;
+  overflow: visible;
+}

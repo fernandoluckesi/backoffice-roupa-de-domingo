@@ -1,0 +1,61 @@
+# Redireciona http -> https, exceto o healthcheck interno do Railway (que nao usa TLS)
+map "$http_x_forwarded_proto|$http_user_agent" $force_https {
+  default 0;
+  "~^http\|(?!RailwayHealthCheck)" 1;
+}
+
+server {
+  listen ${PORT};
+  server_name _;
+  root /usr/share/nginx/html;
+  index index.html;
+  server_tokens off;
+
+  gzip on;
+  gzip_types text/css application/javascript application/json image/svg+xml text/plain;
+  gzip_min_length 1024;
+
+  # API pela rede privada do Railway: o backend nao precisa de CORS para o backoffice.
+  # Resolver + variavel = DNS reavaliado a cada 10s (o IP interno muda a cada deploy do backend).
+  resolver ${NGINX_LOCAL_RESOLVERS} valid=10s;
+
+  if ($force_https) {
+    return 301 https://$host$request_uri;
+  }
+
+  # ------------------------------------------------------------------ cabecalhos de seguranca
+  # (add_header em location substitui os do server, por isso o include repetido)
+  include /etc/nginx/conf.d/security-headers.inc;
+
+  location /api/ {
+    set $backend ${BACKEND_INTERNAL_URL};
+    proxy_pass $backend;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
+    proxy_read_timeout 60s;
+  }
+
+  location = /robots.txt {
+    add_header Cache-Control "public, max-age=86400";
+    include /etc/nginx/conf.d/security-headers.inc;
+  }
+
+  location = /index.html {
+    add_header Cache-Control "no-cache";
+    include /etc/nginx/conf.d/security-headers.inc;
+  }
+
+  # SPA: qualquer rota desconhecida cai no index.html
+  location / {
+    try_files $uri $uri/ /index.html;
+  }
+
+  location ~* \.(js|css|woff2?|png|jpg|jpeg|webp|svg|ico)$ {
+    expires 30d;
+    add_header Cache-Control "public, immutable";
+    include /etc/nginx/conf.d/security-headers.inc;
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "name": "backoffice-roupa-de-domingo",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Backoffice de pedidos da Roupa de Domingo - React + Vite + axios",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@fontsource/archivo": "^5.1.1",
+    "@fontsource/space-grotesk": "^5.1.1",
+    "axios": "^1.7.9",
+    "jsbarcode": "^3.11.6",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.28.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.10",
+    "@types/react": "^18.3.17",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.7.2",
+    "vite": "^5.4.11"
+  }
+}
