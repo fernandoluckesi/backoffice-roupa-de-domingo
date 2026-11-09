@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { ordersService } from "@/services/orders";
 import { extractError } from "@/services/http";
-import { InlineError } from "./StateViews";
+import { FieldError, InlineError, invalidProps } from "./StateViews";
 import { FULFILLMENT_STATUS_LABEL, FULFILLMENT_STEPS, serviceForMethod } from "@/utils/status";
 import {
   correiosTrackingUrl,
@@ -49,6 +49,13 @@ function numberOrNull(value: string): number | null {
   return Number.isFinite(n) ? n : NaN;
 }
 
+/** Erro da API sobre o codigo de rastreio vai para o campo de rastreio. */
+function isTrackingError(message: string): boolean {
+  return /rastreio/i.test(message);
+}
+
+type PackageField = "weight" | "length" | "width" | "height" | "trackingCode";
+
 function toField(value: number | null | undefined): string {
   return value == null ? "" : String(value);
 }
@@ -83,10 +90,12 @@ export function FulfillmentPanel({ order, onUpdated }: { order: OrderDetail; onU
   const [postTracking, setPostTracking] = useState(fulfillment?.trackingCode ?? "");
   const [statusBusy, setStatusBusy] = useState<FulfillmentStatus | null>(null);
   const [statusError, setStatusError] = useState<string | null>(null);
+  const [postTrackingError, setPostTrackingError] = useState<string | null>(null);
 
   const [form, setForm] = useState<PackageForm>(() => formFromOrder(order));
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<PackageField, string>>>({});
   const [saved, setSaved] = useState(false);
 
   // Pedido atualizado (PATCH/recarga): realinha os campos com o que o backend guardou
@@ -114,12 +123,15 @@ export function FulfillmentPanel({ order, onUpdated }: { order: OrderDetail; onU
 
   async function changeStatus(to: FulfillmentStatus) {
     setStatusError(null);
+    setPostTrackingError(null);
     const payload: FulfillmentUpdatePayload = { status: to };
     if (note.trim()) payload.note = note.trim();
     if (to === "SHIPPED") {
       const code = normalizeTrackingCode(postTracking);
       if (!TRACKING_CODE_PATTERN.test(code)) {
-        setStatusError("Informe o código de rastreio no formato AB123456789BR.");
+        setPostTrackingError(
+          code ? "Código de rastreio inválido. Formato: AB123456789BR." : "Informe o código de rastreio para postar.",
+        );
         return;
       }
       payload.trackingCode = code;
@@ -131,7 +143,9 @@ export function FulfillmentPanel({ order, onUpdated }: { order: OrderDetail; onU
       setNote("");
       onUpdated(updated);
     } catch (error) {
-      setStatusError(extractError(error, "Não foi possível mudar o status."));
+      const message = extractError(error, "Não foi possível mudar o status.");
+      if (to === "SHIPPED" && isTrackingError(message)) setPostTrackingError(message);
+      else setStatusError(message);
     } finally {
       setStatusBusy(null);
     }
@@ -140,19 +154,25 @@ export function FulfillmentPanel({ order, onUpdated }: { order: OrderDetail; onU
   async function savePackage(event: FormEvent) {
     event.preventDefault();
     setSaveError(null);
+    setFieldErrors({});
     setSaved(false);
     const f = fulfillment!;
     const weight = numberOrNull(form.weight);
     const length = numberOrNull(form.length);
     const width = numberOrNull(form.width);
     const height = numberOrNull(form.height);
-    if ([weight, length, width, height].some((n) => n !== null && (Number.isNaN(n) || n <= 0))) {
-      setSaveError("Peso e medidas precisam ser números maiores que zero.");
-      return;
-    }
+    const found: Partial<Record<PackageField, string>> = {};
+    const invalidNumber = (n: number | null) => n !== null && (Number.isNaN(n) || n <= 0);
+    if (invalidNumber(weight)) found.weight = "Informe o peso em gramas (maior que zero).";
+    if (invalidNumber(length)) found.length = "Medida inválida.";
+    if (invalidNumber(width)) found.width = "Medida inválida.";
+    if (invalidNumber(height)) found.height = "Medida inválida.";
     const tracking = normalizeTrackingCode(form.trackingCode);
     if (tracking && !TRACKING_CODE_PATTERN.test(tracking)) {
-      setSaveError("Código de rastreio inválido. Formato: AB123456789BR.");
+      found.trackingCode = "Código inválido. Formato: AB123456789BR.";
+    }
+    if (Object.keys(found).length) {
+      setFieldErrors(found);
       return;
     }
 
@@ -177,7 +197,9 @@ export function FulfillmentPanel({ order, onUpdated }: { order: OrderDetail; onU
       onUpdated(updated);
       setSaved(true);
     } catch (error) {
-      setSaveError(extractError(error, "Não foi possível salvar."));
+      const message = extractError(error, "Não foi possível salvar.");
+      if (isTrackingError(message)) setFieldErrors({ trackingCode: message });
+      else setSaveError(message);
     } finally {
       setSaving(false);
     }
@@ -185,6 +207,7 @@ export function FulfillmentPanel({ order, onUpdated }: { order: OrderDetail; onU
 
   const set = (key: keyof PackageForm) => (e: { target: { value: string } }) => {
     setSaved(false);
+    if (key in fieldErrors) setFieldErrors((c) => ({ ...c, [key]: undefined }));
     setForm((current) => ({ ...current, [key]: e.target.value }));
   };
 
@@ -232,12 +255,17 @@ export function FulfillmentPanel({ order, onUpdated }: { order: OrderDetail; onU
             <label className="field">
               <span className="field__label">Código de rastreio (obrigatório para postar)</span>
               <input
-                className="input mono"
+                className={`input mono${postTrackingError ? " input--invalid" : ""}`}
                 placeholder="AB123456789BR"
                 value={postTracking}
                 maxLength={20}
-                onChange={(e) => setPostTracking(normalizeTrackingCode(e.target.value))}
+                onChange={(e) => {
+                  setPostTracking(normalizeTrackingCode(e.target.value));
+                  setPostTrackingError(null);
+                }}
+                {...invalidProps("post-tracking-error", postTrackingError)}
               />
+              <FieldError id="post-tracking-error" message={postTrackingError} />
             </label>
           )}
           <label className="field">
@@ -280,39 +308,68 @@ export function FulfillmentPanel({ order, onUpdated }: { order: OrderDetail; onU
           <label className="field">
             <span className="field__label">Peso (g)</span>
             <input
-              className="input"
+              className={`input${fieldErrors.weight ? " input--invalid" : ""}`}
               inputMode="numeric"
               placeholder={String(order.totalWeightGrams)}
               value={form.weight}
               onChange={set("weight")}
               disabled={!canEdit}
+              {...invalidProps("package-weight-error", fieldErrors.weight)}
             />
+            <FieldError id="package-weight-error" message={fieldErrors.weight} />
           </label>
           <label className="field">
             <span className="field__label">Comp. (cm)</span>
-            <input className="input" inputMode="decimal" value={form.length} onChange={set("length")} disabled={!canEdit} />
+            <input
+              className={`input${fieldErrors.length ? " input--invalid" : ""}`}
+              inputMode="decimal"
+              value={form.length}
+              onChange={set("length")}
+              disabled={!canEdit}
+              {...invalidProps("package-length-error", fieldErrors.length)}
+            />
+            <FieldError id="package-length-error" message={fieldErrors.length} />
           </label>
           <label className="field">
             <span className="field__label">Larg. (cm)</span>
-            <input className="input" inputMode="decimal" value={form.width} onChange={set("width")} disabled={!canEdit} />
+            <input
+              className={`input${fieldErrors.width ? " input--invalid" : ""}`}
+              inputMode="decimal"
+              value={form.width}
+              onChange={set("width")}
+              disabled={!canEdit}
+              {...invalidProps("package-width-error", fieldErrors.width)}
+            />
+            <FieldError id="package-width-error" message={fieldErrors.width} />
           </label>
           <label className="field">
             <span className="field__label">Alt. (cm)</span>
-            <input className="input" inputMode="decimal" value={form.height} onChange={set("height")} disabled={!canEdit} />
+            <input
+              className={`input${fieldErrors.height ? " input--invalid" : ""}`}
+              inputMode="decimal"
+              value={form.height}
+              onChange={set("height")}
+              disabled={!canEdit}
+              {...invalidProps("package-height-error", fieldErrors.height)}
+            />
+            <FieldError id="package-height-error" message={fieldErrors.height} />
           </label>
           <label className="field">
             <span className="field__label">Rastreio</span>
             <input
-              className="input mono"
+              className={`input mono${fieldErrors.trackingCode ? " input--invalid" : ""}`}
               placeholder="AB123456789BR"
               value={form.trackingCode}
               maxLength={20}
               onChange={(e) => {
                 setSaved(false);
+                setFieldErrors((c) => ({ ...c, trackingCode: undefined }));
                 setForm((c) => ({ ...c, trackingCode: normalizeTrackingCode(e.target.value) }));
               }}
               disabled={!canEdit}
+              {...invalidProps("package-tracking-error", fieldErrors.trackingCode)}
             />
+            <FieldError id="package-tracking-error" message={fieldErrors.trackingCode} />
           </label>
         </div>
         <p className="muted small">

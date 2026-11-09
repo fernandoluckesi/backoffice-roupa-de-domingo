@@ -41,6 +41,27 @@ export function EmptyState({ title, children }: { title: string; children?: Reac
   );
 }
 
+/**
+ * Erro de um campo de formulario: vai logo abaixo do input a que pertence.
+ * O input aponta para ele com aria-describedby={id} e recebe a classe input--invalid.
+ */
+export function FieldError({ id, message }: { id: string; message?: string | null }) {
+  if (!message) return null;
+  return (
+    <small id={id} className="field__error" role="alert">
+      {message}
+    </small>
+  );
+}
+
+/** Classe e atributos de acessibilidade do input conforme o erro do campo. */
+export function invalidProps(errorId: string, message?: string | null) {
+  return message
+    ? { "aria-invalid": true as const, "aria-describedby": errorId }
+    : {};
+}
+
+/** Erro geral (que nao pertence a um campo especifico). */
 export function InlineError({ message }: { message: string | null }) {
   if (!message) return null;
   return (

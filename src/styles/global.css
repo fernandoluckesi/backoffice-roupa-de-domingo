@@ -239,6 +239,19 @@ textarea {
   border-color: var(--graphite-400);
   box-shadow: 0 0 0 3px rgba(215, 255, 62, 0.6);
 }
+/* Erro do campo: borda vermelha no input + <small> logo abaixo dele */
+.input--invalid {
+  border-color: var(--danger);
+}
+.input--invalid:focus {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px rgba(198, 40, 40, 0.2);
+}
+.field__error {
+  color: var(--danger);
+  font-size: 12px;
+  line-height: 1.4;
+}
 .input:disabled {
   background: var(--snow);
   color: var(--text-faint);
