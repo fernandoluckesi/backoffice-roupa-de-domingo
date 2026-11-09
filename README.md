@@ -70,12 +70,12 @@ Sem isso, as fotos dos produtos ficam bloqueadas pela CSP.
 
 ## Criando um administrador
 
-O backend tem o script `admin:create`. Ele cria a conta, ou promove a ADMIN uma conta que já existe, e já deixa o e-mail confirmado.
+A equipe do backoffice fica numa tabela própria do backend, `admin_users`, separada dos clientes da loja. Conta de cliente não entra no backoffice, e vice-versa.
 
-- **Produção (Railway, serviço do backend):** defina `ADMIN_EMAIL`, `ADMIN_NAME` e `ADMIN_INITIAL_PASSWORD` e faça um deploy. O script roda no start. A senha só é usada se a conta ainda não existir. Depois do primeiro deploy, apague `ADMIN_INITIAL_PASSWORD`.
-- **Local:** `ADMIN_EMAIL=... ADMIN_INITIAL_PASSWORD=... npm run admin:create` na pasta do backend. Com `-- --reset-password`, também troca a senha de uma conta existente.
+Os admins são criados pelo seed `seed:admin` do backend. A senha nunca fica no código:
 
-Uma conta que não é ADMIN é desconectada na hora, com a mensagem "Esta conta não tem acesso ao backoffice."
+- **Produção (Railway, serviço do backend):** defina `ADMIN_EMAIL`, `ADMIN_NAME` e `ADMIN_INITIAL_PASSWORD` e faça um deploy. O seed roda no start e cria o admin se ele ainda não existir. Depois do primeiro deploy, apague `ADMIN_INITIAL_PASSWORD`.
+- **Local:** na pasta do backend, `ADMIN_EMAIL=... ADMIN_INITIAL_PASSWORD=... npm run seed:admin`. Com `-- --reset-password`, também troca a senha de um admin que já existe. O `npm run seed` de desenvolvimento já cria `admin@roupadedomingo.com` (senha `domingo123`).
 
 ## Login com código por e-mail
 
@@ -83,7 +83,7 @@ Depois do e-mail e da senha, o backend envia um **código de 6 dígitos para o e
 
 - O código vale 15 minutos e serve uma vez só.
 - Depois de 5 tentativas erradas, o código é invalidado. Use "Reenviar código" para receber outro.
-- Só a sessão aberta com o código acessa as rotas de admin. Quem entrou pela loja precisa entrar de novo pelo backoffice.
+- A sessão do backoffice usa um cookie próprio (`rd_admin_session`), independente da sessão de cliente da loja.
 - **Requisito:** o SMTP do backend precisa estar configurado (`MAIL_DRIVER=smtp` e as variáveis do Resend). Sem ele, o código não chega e ninguém entra no backoffice.
 - Em desenvolvimento dá para desligar a exigência com `ADMIN_LOGIN_CODE_REQUIRED=false` no backend. Com `MAIL_DRIVER=log`, o código aparece no console da API.
 

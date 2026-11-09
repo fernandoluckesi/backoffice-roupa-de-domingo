@@ -1,20 +1,18 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { authService } from "@/services/auth";
-import { extractStatus, setLoginCodeRequiredHandler, setUnauthorizedHandler } from "@/services/http";
+import { extractStatus, setUnauthorizedHandler } from "@/services/http";
 import type { AuthUser, LoginPayload } from "@/types";
 
-export const NO_ACCESS_MESSAGE = "Esta conta não tem acesso ao backoffice.";
 export const SESSION_EXPIRED_MESSAGE = "Sua sessão expirou. Entre de novo.";
-export const LOGIN_CODE_MESSAGE = "Entre com e-mail e senha para receber o código de acesso no seu e-mail.";
 
 type AuthStatus = "loading" | "authenticated" | "anonymous";
 
 interface AuthContextValue {
   status: AuthStatus;
   user: AuthUser | null;
-  /** Mensagem a exibir na tela de login (sem acesso, sessao expirada, falha ao checar sessao) */
+  /** Mensagem a exibir na tela de login (sessao expirada, falha ao checar sessao) */
   notice: string | null;
-  /** Faz login. Lanca o erro da API; resolve false quando a conta nao e ADMIN. */
+  /** Faz login. Lanca o erro da API (codigo pendente, senha errada etc.). */
   login: (payload: LoginPayload) => Promise<boolean>;
   logout: (notice?: string) => Promise<void>;
   clearNotice: () => void;
@@ -45,22 +43,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [dropSession],
   );
 
-  // Checagem inicial da sessao (cookie httpOnly: so o backend sabe se ha sessao)
+  // Checagem inicial da sessao (cookie httpOnly do backoffice: so o backend sabe se ha sessao)
   useEffect(() => {
     let active = true;
     authService
       .me()
-      .then(async (me) => {
+      .then((me) => {
         if (!active) return;
-        if (me.role !== "ADMIN") {
-          await logout(NO_ACCESS_MESSAGE);
-          return;
-        }
-        // Sessao aberta fora do backoffice (ex.: pela loja) nao passou pelo codigo do e-mail
-        if (!me.loginCodeVerified) {
-          await logout(LOGIN_CODE_MESSAGE);
-          return;
-        }
         setUser(me);
         setStatus("authenticated");
       })
@@ -72,31 +61,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       active = false;
     };
-  }, [dropSession, logout]);
+  }, [dropSession]);
 
   useEffect(() => {
     setUnauthorizedHandler(() => dropSession(SESSION_EXPIRED_MESSAGE));
-    setLoginCodeRequiredHandler(() => void logout(LOGIN_CODE_MESSAGE));
-    return () => {
-      setUnauthorizedHandler(null);
-      setLoginCodeRequiredHandler(null);
-    };
-  }, [dropSession, logout]);
+    return () => setUnauthorizedHandler(null);
+  }, [dropSession]);
 
-  const login = useCallback(
-    async (payload: LoginPayload) => {
-      const loggedUser = await authService.login(payload);
-      if (loggedUser.role !== "ADMIN") {
-        await logout(NO_ACCESS_MESSAGE);
-        return false;
-      }
-      setUser(loggedUser);
-      setStatus("authenticated");
-      setNotice(null);
-      return true;
-    },
-    [logout],
-  );
+  const login = useCallback(async (payload: LoginPayload) => {
+    const admin = await authService.login(payload);
+    setUser(admin);
+    setStatus("authenticated");
+    setNotice(null);
+    return true;
+  }, []);
 
   const clearNotice = useCallback(() => setNotice(null), []);
 

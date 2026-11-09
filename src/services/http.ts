@@ -15,24 +15,10 @@ export const api = axios.create({
 
 type Handler = () => void;
 let onUnauthorized: Handler | null = null;
-let onLoginCodeRequired: Handler | null = null;
 
 /** Chamado quando a sessao expira/e revogada no meio do uso. */
 export function setUnauthorizedHandler(handler: Handler | null): void {
   onUnauthorized = handler;
-}
-
-/** Chamado quando uma rota de admin recusa a sessao por nao ter passado pelo codigo do e-mail. */
-export function setLoginCodeRequiredHandler(handler: Handler | null): void {
-  onLoginCodeRequired = handler;
-}
-
-function isLoginCodeRequiredError(error: unknown): boolean {
-  return (
-    axios.isAxiosError(error) &&
-    error.response?.status === 403 &&
-    (error.response.data as Partial<ApiErrorBody> | undefined)?.error === "LOGIN_CODE_REQUIRED"
-  );
 }
 
 api.interceptors.response.use(
@@ -40,12 +26,9 @@ api.interceptors.response.use(
   (error: AxiosError) => {
     const url = String(error.config?.url ?? "");
     const status = error.response?.status;
-    // Login errado tambem e 401, e /auth/me sem sessao e o caminho normal: nao sao "sessao expirada"
-    if (status === 401 && !url.includes("/auth/login") && !url.includes("/auth/me")) {
+    // Login (senha errada, codigo pendente) e /admin/auth/me sem sessao tambem sao 401: nao e "sessao expirada"
+    if (status === 401 && !url.includes("/admin/auth/login") && !url.includes("/admin/auth/me")) {
       onUnauthorized?.();
-    }
-    if (url.startsWith("/admin") && isLoginCodeRequiredError(error)) {
-      onLoginCodeRequired?.();
     }
     return Promise.reject(error);
   },

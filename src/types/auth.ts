@@ -1,12 +1,8 @@
-export type UserRole = "CUSTOMER" | "ADMIN";
-
+/** Usuario da equipe (tabela admin_users do backend, separada dos clientes da loja). */
 export interface AuthUser {
   id: string;
   email: string;
   name: string;
-  role: UserRole;
-  /** Sessao aberta com o codigo de login enviado por e-mail (exigido nas rotas de admin) */
-  loginCodeVerified: boolean;
 }
 
 export interface LoginPayload {
@@ -20,5 +16,5 @@ export interface LoginPayload {
 
 export interface LoginResponse {
   accessToken: string;
-  user: AuthUser;
+  admin: AuthUser;
 }
